@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!-- 数据库连接池 -->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <!-- 基本参数 -->
+        <property name="driverClassName" value="${db.driverClass}"/>
+        <property name="url" value="${db.url}" />
+        <property name="username" value="${db.username}" />
+        <property name="password" value="${db.password}" />
+        <property name="connectionProperties" value="${jdbc.mysql.connectionProperties}"/>
+        <!-- 连接数据相关参数 -->
+        <property name="initialSize" value="${dbcp.initialSize}"/>
+        <property name="maxActive" value="${dbcp.maxActive}"/>
+        <property name="maxIdle" value="${dbcp.maxIdle}"/>
+        <property name="minIdle" value="${dbcp.minIdle}"/>
+        <property name="maxWait" value="${dbcp.maxWait}"/>
+        <!--  &lt;!&ndash; 事务相关的属性 &ndash;&gt;
+          <property name="defaultAutoCommit" value="true"/>-->
+        <!-- 连接健康情况 -->
+        <property name="timeBetweenEvictionRunsMillis" value="${dbcp.timeBetweenEvictionRunsMillis}"/>
+        <property name="numTestsPerEvictionRun" value="${dbcp.numTestsPerEvictionRun}"/>
+        <property name="minEvictableIdleTimeMillis" value="${dbcp.minEvictableIdleTimeMillis}"/>
+        <property name="testWhileIdle" value="${dbcp.testWhileIdle}"/>
+        <property name="testOnBorrow" value="${dbcp.testOnBorrow}"/>
+        <property name="testOnReturn" value="${dbcp.testOnReturn}"/>
+        <property name="validationQuery" value="${dbcp.validationQuery}"/>
+        <!-- 连接泄漏回收参数 -->
+        <property name="removeAbandoned" value="${dbcp.removeAbandoned}"/>
+        <property name="removeAbandonedTimeout" value="${dbcp.removeAbandonedTimeout}"/>
+        <property name="logAbandoned" value="${dbcp.logAbandoned}"/>
+    </bean>
+
+    <!-- 使用JDBC事物 -->
+    <bean id="transactionManager"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!-- 使用annotation注解方式配置事务 -->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <!-- mybatis 配置 sqlSessionFactory -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="configLocation" value="classpath:xml/mybatis-config.xml"></property>
+        <property name="mapperLocations">
+            <array>
+                <value>classpath*:mapper/*.xml</value>
+            </array>
+        </property>
+    </bean>
+    <!-- mybatis 配置 SQLSession模板 -->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate"
+          scope="prototype">
+        <constructor-arg index="0" ref="sqlSessionFactory"/>
+    </bean>
+    <!-- mybatis 配置  自动生成Dao接口实现 -->
+    <bean id="mybatisMapper" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage"
+                  value="com.yt.gittest.dao.**"/>
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+    </bean>
+    <!--spring 的JDBC模板 -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource">
+        </property>
+    </bean>
+    <!-- 激活扫描 @Repository @Service标注-->
+    <context:component-scan base-package="com.yt.gittest.**">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+</beans>
